@@ -24,10 +24,17 @@ public class TwitterControllers {
 
 	@Autowired
 	private ApplicationContext context;
-	
+
+	@GetMapping(path = "/testme")
+	public @ResponseBody ResponseEntity<Object> test_service(){
+
+		return new ResponseEntity<>("Ran ok", HttpStatus.OK);
+	}
+
+
 	@GetMapping
 	public @ResponseBody ResponseEntity<Object> test(){
-		
+
 		List<String> list = null;
 		TwitterData tw = (TwitterData) context.getBean("twitterData");
 		try {
@@ -35,14 +42,22 @@ public class TwitterControllers {
 		}catch(Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		System.out.println(list);
 		return new ResponseEntity<>("Ran ok", HttpStatus.OK);
 	}
 
+	/*
+	Body of the request:
+	{
+		"query":"bitcoin",
+		"since":"2019-12-10",
+		"until":"2019-12-18"
+		}
+	 */
 	@PostMapping(path = "/query")
 	public @ResponseBody ResponseEntity<JsonNode> getDataForQuery(@RequestBody JsonNode json){
-		
+
 		List<String> list = null;
 		JsonNode response = null;
 		TwitterData tw = (TwitterData) context.getBean("twitterData");

@@ -3,6 +3,11 @@ package com.silpaservices.ml.data.utils;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.spark.api.java.function.MapFunction;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Encoders;
+import org.apache.spark.sql.SparkSession;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -27,7 +32,10 @@ public class TwitterData {
 	@Value("${oauth.accessTokenSecret}")
 	private String tokenSecret;
 
-	private Twitter getdata() {
+	@Autowired
+    private SparkSession sparkSession;
+	
+	private Twitter authenticateTwitter() {
 		try {
 			ConfigurationBuilder cb = new ConfigurationBuilder();
 			cb.setDebugEnabled(true)
@@ -47,15 +55,29 @@ public class TwitterData {
 	
 	public List<String> searchtweets(String words, String since, String until) throws TwitterException {
 		  
-	    Twitter twitter = getdata();
+	    Twitter twitter = authenticateTwitter();
 	    Query query = new Query(words);
 	    query.since(since);
         query.until(until);
 	    query.setCount(100);
 	    QueryResult result = twitter.search(query);
-	     
-	    return result.getTweets().stream()
-	      .map(item -> item.getText())
-	      .collect(Collectors.toList());
+	    
+	    return processTweets(result);
+	    
+	}
+	
+	private List<String> processTweets(QueryResult result) {
+		
+		Dataset<String> ds = sparkSession.createDataset(result.getTweets().stream()
+	  	      .map(item -> item.getText())
+	  	      .collect(Collectors.toList()), Encoders.STRING());
+		
+		ds.map((MapFunction<String, String>) row -> {
+			return "For Testing : " + row;
+			
+		}, Encoders.STRING());
+		
+	    return ds.collectAsList();
+		
 	}
 }
